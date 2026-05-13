@@ -62,7 +62,7 @@ export const removeCartItem = async (req: Request, res: Response) => {
 
     cart.items = cart.items.filter(
       (item: any) => item._id.toString() !== itemId
-    );
+    ) as any;
 
     await cart.save();
 
