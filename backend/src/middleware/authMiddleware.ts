@@ -4,12 +4,10 @@ import jwt from "jsonwebtoken";
 export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
-
-    if (!authHeader) {
-      return res.status(401).json({ message: "No token provided" });
-    }
-
-    const token = authHeader.split(" ")[1];
+    const headerToken = authHeader?.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : authHeader;
+    const token = headerToken || req.header("x-access-token") || (req.body as any)?.token || req.query.token;
 
     if (!token) {
       return res.status(401).json({ message: "No token provided" });
