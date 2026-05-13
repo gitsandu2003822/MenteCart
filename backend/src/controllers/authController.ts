@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import User from "../models/user";
+import User from "../models/User";
 
 // SIGNUP
 export const signup = async (req: Request, res: Response) => {
@@ -57,4 +57,8 @@ export const login = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
+};
+
+export const me = (req: Request, res: Response) => {
+  res.json({ user: (req as any).user });
 };
