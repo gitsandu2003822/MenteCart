@@ -4,6 +4,7 @@ import authRoutes from "./routes/authRoutes";
 import serviceRoutes from "./routes/serviceRoutes";
 import cartRoutes from "./routes/cartRoutes";
 import bookingRoutes from "./routes/bookingRoutes";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
 const app = express();
 
@@ -20,5 +21,8 @@ app.use("/bookings", bookingRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "MenteCart API Running 🚀" });
 });
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 export default app;

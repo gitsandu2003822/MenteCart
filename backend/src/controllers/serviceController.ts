@@ -1,47 +1,39 @@
 import { Request, Response } from "express";
-import Service from "../models/Service";
+import { getServicesService, getServiceByIdService, createServiceService } from "../services/serviceService";
+import { sendApiError } from "../utils/sendApiError";
 
 // CREATE SERVICE (for testing/admin)
 export const createService = async (req: Request, res: Response) => {
   try {
-    const service = await Service.create(req.body);
+    const service = await createServiceService(req.body);
     res.status(201).json(service);
-  } catch (error) {
-    res.status(500).json({ message: "Error creating service", error });
+  } catch (error: any) {
+    sendApiError(res, error, "Error creating service");
   }
 };
 
-// GET ALL SERVICES (with simple pagination)
+// GET ALL SERVICES (with pagination, filtering, search)
 export const getServices = async (req: Request, res: Response) => {
   try {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
+    const category = typeof req.query.category === 'string' ? req.query.category : undefined;
+    const search = typeof req.query.search === 'string' ? req.query.search : undefined;
 
-    const services = await Service.find()
-      .skip((page - 1) * limit)
-      .limit(limit);
-
-    const total = await Service.countDocuments();
-
-    res.json({
-      data: services,
-      total,
-      hasMore: page * limit < total
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching services", error });
+    const result = await getServicesService(page, limit, category, search);
+    res.json(result);
+  } catch (error: any) {
+    sendApiError(res, error, "Error fetching services");
   }
 };
 
 // GET SINGLE SERVICE
 export const getServiceById = async (req: Request, res: Response) => {
   try {
-    const service = await Service.findById(req.params.id);
-    if (!service) {
-      return res.status(404).json({ message: "Service not found" });
-    }
+    const serviceId = String(req.params.id);
+    const service = await getServiceByIdService(serviceId);
     res.json(service);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching service", error });
+  } catch (error: any) {
+    sendApiError(res, error, "Error fetching service");
   }
 };

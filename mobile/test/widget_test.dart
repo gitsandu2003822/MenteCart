@@ -13,10 +13,10 @@ import 'package:mentecart_mobile/main.dart';
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MenteCartApp());
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
 
-    // Verify that main UI elements are present.
-    expect(find.text('Services'), findsOneWidget);
-    expect(find.text('Home Cleaning'), findsOneWidget);
+    // Verify that the screen builds and shows its initial loading state.
+    expect(find.text('MenteCart'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 }

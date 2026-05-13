@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { sendApiError } from "../utils/sendApiError";
 
 export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -10,13 +11,13 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
     const token = headerToken || req.header("x-access-token") || (req.body as any)?.token || req.query.token;
 
     if (!token) {
-      return res.status(401).json({ message: "No token provided" });
+      return sendApiError(res, { statusCode: 401, message: "No token provided", errorCode: "TOKEN_MISSING" }, "No token provided");
     }
 
     const secret = process.env.JWT_SECRET;
 
     if (!secret) {
-      return res.status(500).json({ message: "JWT secret not configured" });
+      return sendApiError(res, { statusCode: 500, message: "JWT secret not configured", errorCode: "JWT_SECRET_MISSING" }, "JWT secret not configured");
     }
 
     const decoded = jwt.verify(token, secret);
@@ -25,6 +26,6 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
 
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Invalid token" });
+    return sendApiError(res, { statusCode: 401, message: "Invalid token", errorCode: "TOKEN_INVALID" }, "Invalid token");
   }
 };
