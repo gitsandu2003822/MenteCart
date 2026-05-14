@@ -7,6 +7,33 @@ const getStatusPayload = (status: string) => ({
   changedAt: new Date()
 });
 
+const parseItemDateTime = (date: string, timeSlot: string): Date | null => {
+  if (!date || !timeSlot) return null;
+
+  const parts = timeSlot.trim().split(" ");
+  if (parts.length < 2) return null;
+
+  const timePart = parts[0]!;
+  const meridiemRaw = parts[1]!;
+  const timeSplit = timePart.split(":");
+  if (timeSplit.length !== 2) return null;
+
+  const hourRaw = Number(timeSplit[0]);
+  const minute = Number(timeSplit[1]);
+  const meridiem = meridiemRaw.toUpperCase();
+
+  if (Number.isNaN(hourRaw) || Number.isNaN(minute)) return null;
+
+  let hour = hourRaw;
+  if (meridiem === "PM" && hour < 12) hour += 12;
+  if (meridiem === "AM" && hour === 12) hour = 0;
+
+  const dateTime = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(dateTime.getTime())) return null;
+  dateTime.setHours(hour, minute, 0, 0);
+  return dateTime;
+};
+
 export const checkoutCartService = async (userId: string, paymentMethod: string = "cash") => {
   const cart = await Cart.findOne({ userId });
 
@@ -128,6 +155,27 @@ export const cancelBookingService = async (userId: string, bookingId: string) =>
     throw { statusCode: 400, message: "Cannot cancel completed booking" };
   }
 
+  const cutoffHours = Number(process.env.BOOKING_CANCEL_CUTOFF_HOURS || 24);
+  const cutoffMs = cutoffHours * 60 * 60 * 1000;
+
+  const itemDateTimes = (((booking as any).items as any[]) || [])
+    .map((item) => parseItemDateTime(String(item.date || ""), String(item.timeSlot || "")))
+    .filter((value): value is Date => value !== null);
+
+  if (itemDateTimes.length > 0) {
+    const earliest = itemDateTimes.reduce((min, current) =>
+      current.getTime() < min.getTime() ? current : min
+    );
+
+    const now = Date.now();
+    if (now >= earliest.getTime() - cutoffMs) {
+      throw {
+        statusCode: 409,
+        message: `Cancellation window closed (${cutoffHours}h cutoff)`
+      };
+    }
+  }
+
   booking.status = "cancelled";
   (booking as any).statusHistory = [
     ...(((booking as any).statusHistory as any[]) || []),
@@ -135,5 +183,37 @@ export const cancelBookingService = async (userId: string, bookingId: string) =>
   ];
   await booking.save();
 
+  return booking;
+};
+
+export const confirmBookingPaymentService = async (userId: string, bookingId: string) => {
+  const booking = await Booking.findById(bookingId);
+
+  if (!booking) {
+    throw { statusCode: 404, message: "Booking not found" };
+  }
+
+  if (booking.userId.toString() !== userId) {
+    throw { statusCode: 403, message: "Unauthorized" };
+  }
+
+  if (booking.status === "cancelled") {
+    throw { statusCode: 400, message: "Cannot pay a cancelled booking" };
+  }
+
+  if (booking.paymentMethod !== "card") {
+    throw { statusCode: 400, message: "Payment simulation is only for card bookings" };
+  }
+
+  booking.paymentStatus = "paid";
+  if (booking.status === "pending") {
+    booking.status = "confirmed";
+    (booking as any).statusHistory = [
+      ...(((booking as any).statusHistory as any[]) || []),
+      getStatusPayload("confirmed")
+    ];
+  }
+
+  await booking.save();
   return booking;
 };

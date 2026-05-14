@@ -9,15 +9,15 @@ export const signupService = async (email: string, password: string) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await User.create({ email, password: hashedPassword });
+  const user = await User.create({ email, password: hashedPassword, role: "user" });
 
   const token = jwt.sign(
-    { id: user._id },
+    { id: user._id, role: user.role },
     process.env.JWT_SECRET as string,
     { expiresIn: "1h" }
   );
 
-  return { user: { _id: user._id, email: user.email }, token };
+  return { user: { _id: user._id, email: user.email, role: user.role }, token };
 };
 
 export const loginService = async (email: string, password: string) => {
@@ -32,10 +32,10 @@ export const loginService = async (email: string, password: string) => {
   }
 
   const token = jwt.sign(
-    { id: user._id },
+    { id: user._id, role: user.role },
     process.env.JWT_SECRET as string,
     { expiresIn: "1h" }
   );
 
-  return { user: { _id: user._id, email: user.email }, token };
+  return { user: { _id: user._id, email: user.email, role: user.role }, token };
 };

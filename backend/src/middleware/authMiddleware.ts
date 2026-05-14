@@ -29,3 +29,21 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
     return sendApiError(res, { statusCode: 401, message: "Invalid token", errorCode: "TOKEN_INVALID" }, "Invalid token");
   }
 };
+
+export const checkAdminRole = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = (req as any).user;
+
+    if (!user) {
+      return sendApiError(res, { statusCode: 401, message: "No user in request", errorCode: "USER_NOT_FOUND" }, "No user in request");
+    }
+
+    if (user.role !== "admin") {
+      return sendApiError(res, { statusCode: 403, message: "Admin role required", errorCode: "FORBIDDEN" }, "Admin role required");
+    }
+
+    next();
+  } catch (error) {
+    return sendApiError(res, { statusCode: 500, message: "Error checking admin role", errorCode: "SERVER_ERROR" }, "Error checking admin role");
+  }
+};

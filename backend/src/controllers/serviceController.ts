@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { getServicesService, getServiceByIdService, createServiceService } from "../services/serviceService";
 import { sendApiError } from "../utils/sendApiError";
 
+import { getAvailabilityService } from "../services/serviceService";
+
 // CREATE SERVICE (for testing/admin)
 export const createService = async (req: Request, res: Response) => {
   try {
@@ -35,5 +37,21 @@ export const getServiceById = async (req: Request, res: Response) => {
     res.json(service);
   } catch (error: any) {
     sendApiError(res, error, "Error fetching service");
+  }
+};
+
+// GET AVAILABILITY FOR SERVICE ON A GIVEN DATE
+export const getAvailability = async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.id);
+    const date = String(req.query.date || "");
+    if (!date) {
+      return sendApiError(res, { statusCode: 400, message: "date query param required" }, "Missing date");
+    }
+
+    const result = await getAvailabilityService(serviceId, date);
+    res.json(result);
+  } catch (error: any) {
+    sendApiError(res, error, "Error fetching availability");
   }
 };

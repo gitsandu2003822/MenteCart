@@ -22,5 +22,9 @@ plugins {
     id("com.android.application") version "8.11.1" apply false
     id("org.jetbrains.kotlin.android") version "2.2.20" apply false
 }
+include(":app")
+
+// Set an explicit unique root project name to avoid duplicate 'android' project names
+rootProject.name = "mentecart_mobile_android"
 
 include(":app")

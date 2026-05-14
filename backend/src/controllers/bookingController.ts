@@ -3,7 +3,8 @@ import {
   checkoutCartService,
   getUserBookingsService,
   getBookingByIdService,
-  cancelBookingService
+  cancelBookingService,
+  confirmBookingPaymentService
 } from "../services/bookingService";
 import { sendApiError } from "../utils/sendApiError";
 
@@ -51,5 +52,17 @@ export const cancelBooking = async (req: Request, res: Response) => {
     res.json(booking);
   } catch (error: any) {
     sendApiError(res, error, "Error cancelling booking");
+  }
+};
+
+// SIMULATE PAYMENT SUCCESS (CARD) => pending -> confirmed
+export const payBooking = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const id = String(req.params.id);
+    const booking = await confirmBookingPaymentService(userId, id);
+    res.json(booking);
+  } catch (error: any) {
+    sendApiError(res, error, "Error processing payment");
   }
 };
