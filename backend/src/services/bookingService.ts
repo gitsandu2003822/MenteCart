@@ -7,6 +7,13 @@ const getStatusPayload = (status: string) => ({
   changedAt: new Date()
 });
 
+const appendStatusHistory = (booking: any, status: string) => {
+  booking.statusHistory = [
+    ...((booking.statusHistory as any[]) || []),
+    getStatusPayload(status)
+  ];
+};
+
 const parseItemDateTime = (date: string, timeSlot: string): Date | null => {
   if (!date || !timeSlot) return null;
 
@@ -32,6 +39,69 @@ const parseItemDateTime = (date: string, timeSlot: string): Date | null => {
   if (Number.isNaN(dateTime.getTime())) return null;
   dateTime.setHours(hour, minute, 0, 0);
   return dateTime;
+};
+
+const getBookingScheduleBoundary = (booking: any): Date | null => {
+  const itemDateTimes = (((booking as any).items as any[]) || [])
+    .map((item) => parseItemDateTime(String(item.date || ""), String(item.timeSlot || "")))
+    .filter((value): value is Date => value !== null);
+
+  if (itemDateTimes.length === 0) {
+    return null;
+  }
+
+  return itemDateTimes.reduce((max, current) =>
+    current.getTime() > max.getTime() ? current : max
+  );
+};
+
+const refreshBookingLifecycle = (booking: any) => {
+  if (!booking || booking.status === "cancelled" || booking.status === "failed" || booking.status === "completed") {
+    return booking;
+  }
+
+  const boundary = getBookingScheduleBoundary(booking);
+  if (!boundary) {
+    return booking;
+  }
+
+  const now = Date.now();
+
+  if (booking.status === "pending") {
+    if (now >= boundary.getTime()) {
+      booking.status = "failed";
+      booking.paymentStatus = "failed";
+      appendStatusHistory(booking, "failed");
+    }
+    return booking;
+  }
+
+  if (booking.status === "confirmed" && now >= boundary.getTime()) {
+    booking.status = "completed";
+    appendStatusHistory(booking, "completed");
+  }
+
+  return booking;
+};
+
+export const sweepBookingLifecycleService = async () => {
+  const bookings = await Booking.find({
+    status: { $in: ["pending", "confirmed"] }
+  });
+
+  let changed = 0;
+
+  for (const booking of bookings) {
+    const previousStatus = booking.status;
+    refreshBookingLifecycle(booking);
+
+    if (booking.status !== previousStatus) {
+      changed += 1;
+      await booking.save();
+    }
+  }
+
+  return { scanned: bookings.length, changed };
 };
 
 export const checkoutCartService = async (userId: string, paymentMethod: string = "cash") => {
@@ -118,11 +188,33 @@ export const checkoutCartService = async (userId: string, paymentMethod: string 
 };
 
 export const getUserBookingsService = async (userId: string) => {
-  const bookings = await Booking.find({ userId }).populate("items.serviceId");
+  await sweepBookingLifecycleService();
+  const bookings = await Booking.find({ userId }).sort({ createdAt: -1 }).populate("items.serviceId");
   return bookings;
 };
 
+export const getAllBookingsService = async (page: number = 1, limit: number = 20) => {
+  await sweepBookingLifecycleService();
+  const bookings = await Booking.find({})
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .populate("items.serviceId")
+    .populate("userId", "email role");
+
+  const total = await Booking.countDocuments({});
+
+  return {
+    data: bookings,
+    total,
+    page,
+    limit,
+    hasMore: page * limit < total
+  };
+};
+
 export const getBookingByIdService = async (userId: string, bookingId: string) => {
+  await sweepBookingLifecycleService();
   const booking = await Booking.findById(bookingId).populate("items.serviceId");
 
   if (!booking) {
@@ -137,6 +229,7 @@ export const getBookingByIdService = async (userId: string, bookingId: string) =
 };
 
 export const cancelBookingService = async (userId: string, bookingId: string) => {
+  await sweepBookingLifecycleService();
   const booking = await Booking.findById(bookingId);
 
   if (!booking) {
@@ -177,16 +270,14 @@ export const cancelBookingService = async (userId: string, bookingId: string) =>
   }
 
   booking.status = "cancelled";
-  (booking as any).statusHistory = [
-    ...(((booking as any).statusHistory as any[]) || []),
-    getStatusPayload("cancelled")
-  ];
+  appendStatusHistory(booking, "cancelled");
   await booking.save();
 
   return booking;
 };
 
 export const confirmBookingPaymentService = async (userId: string, bookingId: string) => {
+  await sweepBookingLifecycleService();
   const booking = await Booking.findById(bookingId);
 
   if (!booking) {
@@ -201,6 +292,24 @@ export const confirmBookingPaymentService = async (userId: string, bookingId: st
     throw { statusCode: 400, message: "Cannot pay a cancelled booking" };
   }
 
+  if (booking.status === "completed") {
+    throw { statusCode: 400, message: "Cannot pay a completed booking" };
+  }
+
+  if (booking.status === "failed") {
+    throw { statusCode: 400, message: "Cannot pay a failed booking" };
+  }
+
+  refreshBookingLifecycle(booking);
+  if ((booking as any).status === "failed") {
+    await booking.save();
+    throw { statusCode: 409, message: "Booking has expired and was marked failed" };
+  }
+
+  if ((booking as any).paymentStatus === "paid") {
+    return booking;
+  }
+
   if (booking.paymentMethod !== "card") {
     throw { statusCode: 400, message: "Payment simulation is only for card bookings" };
   }
@@ -208,12 +317,62 @@ export const confirmBookingPaymentService = async (userId: string, bookingId: st
   booking.paymentStatus = "paid";
   if (booking.status === "pending") {
     booking.status = "confirmed";
-    (booking as any).statusHistory = [
-      ...(((booking as any).statusHistory as any[]) || []),
-      getStatusPayload("confirmed")
-    ];
+    appendStatusHistory(booking, "confirmed");
   }
 
+  await booking.save();
+  return booking;
+};
+
+export const completeBookingService = async (bookingId: string) => {
+  await sweepBookingLifecycleService();
+  const booking = await Booking.findById(bookingId);
+
+  if (!booking) {
+    throw { statusCode: 404, message: "Booking not found" };
+  }
+
+  if (booking.status === "cancelled") {
+    throw { statusCode: 400, message: "Cannot complete a cancelled booking" };
+  }
+
+  if (booking.status === "failed") {
+    throw { statusCode: 400, message: "Cannot complete a failed booking" };
+  }
+
+  if (booking.status === "completed") {
+    return booking;
+  }
+
+  if (booking.status !== "confirmed") {
+    throw { statusCode: 400, message: "Only confirmed bookings can be completed" };
+  }
+
+  booking.status = "completed";
+  appendStatusHistory(booking, "completed");
+  await booking.save();
+  return booking;
+};
+
+export const failBookingService = async (bookingId: string) => {
+  await sweepBookingLifecycleService();
+  const booking = await Booking.findById(bookingId);
+
+  if (!booking) {
+    throw { statusCode: 404, message: "Booking not found" };
+  }
+
+  if (booking.status === "cancelled") {
+    throw { statusCode: 400, message: "Cannot fail a cancelled booking" };
+  }
+
+  if (booking.status === "completed") {
+    throw { statusCode: 400, message: "Cannot fail a completed booking" };
+  }
+
+  booking.status = "failed";
+  booking.paymentStatus = "failed";
+  appendStatusHistory(booking, "failed");
   await booking.save();
   return booking;
 };

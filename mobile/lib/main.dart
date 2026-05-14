@@ -47,6 +47,10 @@ class AuthWrapper extends StatelessWidget {
       builder: (context, state) {
         if (state is AuthSuccess) {
           return const HomeScreen();
+        }
+
+        if (ApiService.hasToken()) {
+          return const HomeScreen();
         } else {
           return const LoginScreen();
         }
@@ -199,11 +203,13 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Services"),
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
+              icon: Icon(Icons.home), label: "Services"),
+          const BottomNavigationBarItem(
               icon: Icon(Icons.shopping_cart), label: "Cart"),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: "Bookings"),
+          const BottomNavigationBarItem(
+              icon: Icon(Icons.book), label: "Bookings"),
         ],
       ),
     );
@@ -664,8 +670,7 @@ class _CartViewState extends State<_CartView> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          item["serviceId"]?.toString() ??
-                                              "Service",
+                                          _itemTitle(item),
                                           style: const TextStyle(
                                               fontWeight: FontWeight.bold),
                                         ),

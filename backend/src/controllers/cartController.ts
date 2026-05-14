@@ -5,6 +5,10 @@ import {
   removeCartItemService,
   updateCartItemService
 } from "../services/cartService";
+import {
+  addToCartWithHoldService,
+  removeCartItemWithReleaseService
+} from "../services/capacityIntegrationService";
 import { sendApiError } from "../utils/sendApiError";
 
 // GET CART
@@ -24,7 +28,15 @@ export const addToCart = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
     const { serviceId, date, timeSlot, quantity } = req.body;
 
-    const cart = await addToCartService(userId, serviceId, date, timeSlot, quantity || 1);
+    const cart = await addToCartWithHoldService(
+      userId,
+      serviceId,
+      date,
+      timeSlot,
+      quantity || 1,
+      (uid: string, sid: string, d: string, ts: string, q: number) =>
+        addToCartService(uid, sid, d, ts, q)
+    );
     res.json(cart);
   } catch (error: any) {
     sendApiError(res, error, "Error adding to cart");
@@ -37,7 +49,11 @@ export const removeCartItem = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
     const itemId = String(req.params.itemId);
 
-    const cart = await removeCartItemService(userId, itemId);
+    const cart = await removeCartItemWithReleaseService(
+      userId,
+      itemId,
+      (uid: string, iid: string) => removeCartItemService(uid, iid)
+    );
     res.json(cart);
   } catch (error: any) {
     sendApiError(res, error, "Error removing item");

@@ -5,8 +5,8 @@ import { sendApiError } from "../utils/sendApiError";
 // SIGNUP
 export const signup = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
-    const result = await signupService(email, password);
+    const { email, password, role } = req.body;
+    const result = await signupService(email, password, role);
     res.status(201).json(result);
   } catch (error: any) {
     sendApiError(res, error, "Server error");

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MenteCart Admin</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-orb orb-a"></div>
+    <div class="bg-orb orb-b"></div>
+    <main class="shell">
+      <section class="hero-panel">
+        <div class="brand-row">
+          <div class="mark">MC</div>
+          <div>
+            <p class="eyebrow">Admin Console</p>
+            <h1>MenteCart</h1>
+          </div>
+        </div>
+        <p class="hero-copy">
+          Sign in as an admin, manage services, and keep the mobile user app untouched.
+        </p>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span>Session</span>
+            <strong id="sessionState">Logged out</strong>
+          </div>
+          <div class="stat-card">
+            <span>Role</span>
+            <strong id="roleState">-</strong>
+          </div>
+          <div class="stat-card">
+            <span>Services</span>
+            <strong id="serviceCount">0</strong>
+          </div>
+        </div>
+        <div class="endpoint-box">
+          <label for="apiBaseUrl">API Base URL</label>
+          <input id="apiBaseUrl" type="url" spellcheck="false" />
+          <p class="hint">Example: http://localhost:5001 or your deployed backend URL.</p>
+        </div>
+      </section>
+
+      <section class="auth-panel card" id="loginPanel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow" id="authEyebrow">Admin Login</p>
+            <h2 id="authTitle">Welcome back</h2>
+          </div>
+          <span class="badge">Secure JWT</span>
+        </div>
+        <div class="auth-tabs">
+          <button id="loginTab" class="tab-btn active" type="button">Login</button>
+          <button id="registerTab" class="tab-btn" type="button">Register</button>
+        </div>
+        <form id="loginForm" class="form-grid">
+          <label>
+            Email
+            <input id="email" type="email" autocomplete="email" placeholder="admin@company.com" required />
+          </label>
+          <label>
+            Password
+            <input id="password" type="password" autocomplete="current-password" placeholder="Your password" required />
+          </label>
+          <button class="primary-btn" type="submit">Sign In</button>
+        </form>
+        <form id="registerForm" class="form-grid hidden">
+          <label>
+            Email
+            <input id="registerEmail" type="email" autocomplete="email" placeholder="newadmin@company.com" required />
+          </label>
+          <label>
+            Password
+            <input id="registerPassword" type="password" autocomplete="new-password" placeholder="Create a password" required />
+          </label>
+          <button class="primary-btn" type="submit">Create Account</button>
+          <p class="message subtle">Registration creates the account. If the backend still assigns a user role, promote it to admin before using the console.</p>
+        </form>
+        <p id="authMessage" class="message"></p>
+      </section>
+
+      <section class="dashboard card hidden" id="dashboardPanel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Service Management</p>
+            <h2>Create services</h2>
+          </div>
+          <div class="action-row">
+            <button id="refreshBtn" class="ghost-btn" type="button">Refresh</button>
+            <button id="logoutBtn" class="ghost-btn danger" type="button">Logout</button>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <form id="serviceForm" class="service-form">
+            <h3>New Service</h3>
+            <label>
+              Title
+              <input id="title" type="text" placeholder="Premium Massage" required />
+            </label>
+            <label>
+              Description
+              <textarea id="description" rows="3" placeholder="90-minute service description" required></textarea>
+            </label>
+            <div class="two-col">
+              <label>
+                Price
+                <input id="price" type="number" min="0" step="0.01" placeholder="150" required />
+              </label>
+              <label>
+                Duration (minutes)
+                <input id="duration" type="number" min="1" step="1" placeholder="90" required />
+              </label>
+            </div>
+            <div class="two-col">
+              <label>
+                Category
+                <input id="category" type="text" placeholder="spa" required />
+              </label>
+              <label>
+                Capacity per Slot
+                <input id="capacityPerSlot" type="number" min="1" step="1" placeholder="3" required />
+              </label>
+            </div>
+            <label>
+              Image URL
+              <input id="image" type="url" placeholder="https://example.com/image.jpg" />
+            </label>
+            <button class="primary-btn" type="submit">Create Service</button>
+            <p id="serviceMessage" class="message"></p>
+          </form>
+
+          <div class="service-list-panel">
+            <div class="panel-header compact">
+              <div>
+                <p class="eyebrow">Inventory</p>
+                <h3>Existing services</h3>
+              </div>
+            </div>
+            <div id="servicesList" class="service-list"></div>
+          </div>
+        </div>
+
+        <section class="booking-panel card-inner">
+          <div class="panel-header compact">
+            <div>
+              <p class="eyebrow">Booking Management</p>
+              <h3>All bookings</h3>
+            </div>
+            <button id="refreshBookingsBtn" class="ghost-btn" type="button">Refresh bookings</button>
+          </div>
+          <p id="bookingMessage" class="message"></p>
+          <div id="bookingsList" class="booking-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

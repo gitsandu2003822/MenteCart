@@ -1,6 +1,14 @@
 import Cart from "../models/Cart";
 import Service from "../models/Service";
 
+const normalizeQuantity = (quantity: number | undefined) => {
+  const parsed = Number(quantity ?? 1);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw { statusCode: 400, message: "Invalid quantity" };
+  }
+  return Math.floor(parsed);
+};
+
 export const getCartService = async (userId: string) => {
   const cart = await Cart.findOne({ userId }).populate("items.serviceId");
   return cart || { userId, items: [] };
@@ -13,6 +21,16 @@ export const addToCartService = async (
   timeSlot: string,
   quantity: number = 1
 ) => {
+  const nextQuantity = normalizeQuantity(quantity);
+
+  if (!date || !timeSlot) {
+    throw { statusCode: 400, message: "date and timeSlot are required" };
+  }
+
+  if (nextQuantity <= 0) {
+    throw { statusCode: 400, message: "Quantity must be greater than zero" };
+  }
+
   // Verify service exists
   const service = await Service.findById(serviceId);
   if (!service) {
@@ -24,7 +42,7 @@ export const addToCartService = async (
   if (!cart) {
     cart = await Cart.create({
       userId,
-      items: [{ serviceId, date, timeSlot, quantity }]
+      items: [{ serviceId, date, timeSlot, quantity: nextQuantity }]
     });
   } else {
     // Check for duplicate slot
@@ -36,10 +54,11 @@ export const addToCartService = async (
     );
 
     if (exists) {
-      throw { statusCode: 409, message: "Slot already in cart" };
+      exists.quantity = (exists.quantity || 0) + nextQuantity;
+    } else {
+      cart.items.push({ serviceId, date, timeSlot, quantity: nextQuantity });
     }
 
-    cart.items.push({ serviceId, date, timeSlot, quantity });
     await cart.save();
   }
 
@@ -75,6 +94,13 @@ export const updateCartItemService = async (
     throw { statusCode: 404, message: "Item not found in cart" };
   }
 
+  const nextQuantity = updates.quantity === undefined ? undefined : normalizeQuantity(updates.quantity);
+  if (nextQuantity !== undefined && nextQuantity <= 0) {
+    cart.items = cart.items.filter((cartItem: any) => cartItem._id.toString() !== itemId) as any;
+    await cart.save();
+    return await cart.populate("items.serviceId");
+  }
+
   const nextDate = updates.date ?? item.date;
   const nextTimeSlot = updates.timeSlot ?? item.timeSlot;
 
@@ -87,12 +113,16 @@ export const updateCartItemService = async (
   );
 
   if (duplicate) {
-    throw { statusCode: 409, message: "Slot already exists in cart" };
+    duplicate.quantity = (duplicate.quantity || 0) + (nextQuantity ?? item.quantity ?? 1);
+    cart.items = cart.items.filter((cartItem: any) => cartItem._id.toString() !== itemId) as any;
+
+    await cart.save();
+    return await cart.populate("items.serviceId");
   }
 
   if (updates.date) item.date = updates.date;
   if (updates.timeSlot) item.timeSlot = updates.timeSlot;
-  if (updates.quantity) item.quantity = updates.quantity;
+  if (nextQuantity !== undefined) item.quantity = nextQuantity;
 
   await cart.save();
   return await cart.populate("items.serviceId");

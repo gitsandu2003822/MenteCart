@@ -15,6 +15,7 @@ MenteCart is a service booking app with a Flutter mobile client and a Node.js/Ex
 
 - `backend/` - Express API, Mongo models, controllers, services, validation
 - `mobile/` - Flutter app with BLoC-based service browsing UI
+- `admin-web/` - Static admin web console for admin login and service management
 
 ## Prerequisites
 
@@ -66,6 +67,10 @@ flutter run
 - `GET /bookings`
 - `GET /bookings/:id`
 - `POST /bookings/:id/cancel`
+
+## Admin Web
+
+The separate admin web console lives in `admin-web/`. It is kept outside the Flutter user app so admin login and service creation can be managed independently.
 
 ## Known Limitations
 

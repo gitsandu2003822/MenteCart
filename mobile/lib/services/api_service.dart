@@ -16,6 +16,8 @@ class ApiService {
     }
   }
 
+  static bool hasToken() => _token != null;
+
   // Persist or clear token. Returns after persistence completes.
   static Future<void> setToken(String? token) async {
     _token = token;

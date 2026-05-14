@@ -2,14 +2,14 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
 
-export const signupService = async (email: string, password: string) => {
+export const signupService = async (email: string, password: string, role: "admin" | "user" = "user") => {
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     throw { statusCode: 409, message: "Email already exists" };
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await User.create({ email, password: hashedPassword, role: "user" });
+  const user = await User.create({ email, password: hashedPassword, role });
 
   const token = jwt.sign(
     { id: user._id, role: user.role },
