@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../models/api_failure.dart';
 import '../repositories/service_repository.dart';
 
 sealed class ServiceEvent extends Equatable {
@@ -61,6 +62,8 @@ class ServiceBloc extends Bloc<ServiceEvent, ServiceState> {
     try {
       final services = await _repository.fetchServices();
       emit(ServiceLoaded(services));
+    } on ApiFailure catch (e) {
+      emit(ServiceFailure(e.message));
     } catch (error) {
       emit(ServiceFailure(error.toString()));
     }

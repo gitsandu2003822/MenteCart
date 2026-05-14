@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../models/api_failure.dart';
 import '../repositories/cart_repository.dart';
 
 sealed class CartEvent extends Equatable {
@@ -92,6 +93,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     try {
       final cart = await _repository.fetchCart();
       emit(CartLoaded(cart));
+    } on ApiFailure catch (e) {
+      emit(CartFailure(e.message));
     } catch (error) {
       emit(CartFailure(error.toString()));
     }
@@ -104,6 +107,10 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           event.serviceId, event.date, event.timeSlot,
           quantity: event.quantity);
       emit(CartLoaded(cart));
+    } on ConflictFailure {
+      emit(CartFailure('DUPLICATE_SLOT:${event.serviceId}'));
+    } on ApiFailure catch (e) {
+      emit(CartFailure(e.message));
     } catch (error) {
       emit(CartFailure(error.toString()));
     }
@@ -115,6 +122,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     try {
       final cart = await _repository.removeItem(event.itemId);
       emit(CartLoaded(cart));
+    } on ApiFailure catch (e) {
+      emit(CartFailure(e.message));
     } catch (error) {
       emit(CartFailure(error.toString()));
     }
@@ -131,13 +140,12 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         timeSlot: event.timeSlot,
       );
       emit(CartLoaded(cart));
+    } on ConflictFailure {
+      emit(CartFailure('DUPLICATE_SLOT:${event.itemId}'));
+    } on ApiFailure catch (e) {
+      emit(CartFailure(e.message));
     } catch (error) {
-      final message = error.toString();
-      if (message.contains('HTTP_409')) {
-        emit(CartFailure('DUPLICATE_SLOT:${event.itemId}'));
-      } else {
-        emit(CartFailure(message));
-      }
+      emit(CartFailure(error.toString()));
     }
   }
 }

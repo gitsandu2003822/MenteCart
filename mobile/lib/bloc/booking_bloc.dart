@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../models/api_failure.dart';
 import '../repositories/booking_repository.dart';
 
 sealed class BookingEvent extends Equatable {
@@ -94,6 +95,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       final booking =
           await _repository.checkout(paymentMethod: event.paymentMethod);
       emit(BookingSuccess(booking));
+    } on ApiFailure catch (e) {
+      emit(BookingFailure(e.message));
     } catch (error) {
       emit(BookingFailure(error.toString()));
     }
@@ -105,6 +108,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     try {
       final bookings = await _repository.fetchBookings();
       emit(BookingListLoaded(bookings));
+    } on ApiFailure catch (e) {
+      emit(BookingFailure(e.message));
     } catch (error) {
       emit(BookingFailure(error.toString()));
     }
@@ -116,6 +121,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     try {
       final booking = await _repository.cancelBooking(event.bookingId);
       emit(BookingSuccess(booking));
+    } on ApiFailure catch (e) {
+      emit(BookingFailure(e.message));
     } catch (error) {
       emit(BookingFailure(error.toString()));
     }
@@ -127,6 +134,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     try {
       final booking = await _repository.payBooking(event.bookingId);
       emit(BookingSuccess(booking));
+    } on ApiFailure catch (e) {
+      emit(BookingFailure(e.message));
     } catch (error) {
       emit(BookingFailure(error.toString()));
     }

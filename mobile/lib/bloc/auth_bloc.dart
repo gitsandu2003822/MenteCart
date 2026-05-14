@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../models/api_failure.dart';
 import '../repositories/auth_repository.dart';
 import '../services/api_service.dart';
 
@@ -79,6 +80,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final result = await _repository.signup(event.email, event.password);
       emit(AuthSuccess(result['user']));
+    } on ApiFailure catch (e) {
+      emit(AuthFailure(e.message));
     } catch (error) {
       emit(AuthFailure(error.toString()));
     }
@@ -90,6 +93,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final result = await _repository.login(event.email, event.password);
       emit(AuthSuccess(result['user']));
+    } on ApiFailure catch (e) {
+      emit(AuthFailure(e.message));
     } catch (error) {
       emit(AuthFailure(error.toString()));
     }
