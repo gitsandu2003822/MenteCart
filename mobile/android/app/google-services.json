@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "439684101595",
+    "project_id": "mentecart-a3322",
+    "storage_bucket": "mentecart-a3322.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:439684101595:android:ccec067c9b7c616f8523fe",
+        "android_client_info": {
+          "package_name": "com.example.mentecart_mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "439684101595-5mkeb58lhvp57hnha0m4bj172vlaim71.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mentecart_mobile",
+            "certificate_hash": "54d881cb0df74cdab8f9be010dd306d4c6f38258"
+          }
+        },
+        {
+          "client_id": "439684101595-07f9jada4d32b1ps2jcad07b1ug59mkn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2ZjB7K3HmiomdROqrWx4EBX7YCI90pHw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "439684101595-07f9jada4d32b1ps2jcad07b1ug59mkn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

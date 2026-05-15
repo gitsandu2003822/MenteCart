@@ -30,8 +30,16 @@ final class AuthLoginRequested extends AuthEvent {
   List<Object?> get props => [email, password];
 }
 
+final class AuthGoogleLoginRequested extends AuthEvent {
+  const AuthGoogleLoginRequested();
+}
+
 final class AuthLogoutRequested extends AuthEvent {
   const AuthLogoutRequested();
+}
+
+final class AuthCheckRequested extends AuthEvent {
+  const AuthCheckRequested();
 }
 
 sealed class AuthState extends Equatable {
@@ -69,10 +77,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc(this._repository) : super(const AuthInitial()) {
     on<AuthSignupRequested>(_onSignup);
     on<AuthLoginRequested>(_onLogin);
+    on<AuthGoogleLoginRequested>(_onGoogleLogin);
     on<AuthLogoutRequested>(_onLogout);
+    on<AuthCheckRequested>(_onAuthCheck);
   }
 
   final AuthRepository _repository;
+
+  Future<void> _onAuthCheck(
+      AuthCheckRequested event, Emitter<AuthState> emit) async {
+    // Check if a token exists from a previous session
+    if (ApiService.hasToken()) {
+      // If token exists, emit success state to skip login screen
+      emit(const AuthSuccess({'isRestored': true}));
+    }
+  }
 
   Future<void> _onSignup(
       AuthSignupRequested event, Emitter<AuthState> emit) async {
@@ -92,6 +111,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const AuthLoading());
     try {
       final result = await _repository.login(event.email, event.password);
+      emit(AuthSuccess(result['user']));
+    } on ApiFailure catch (e) {
+      emit(AuthFailure(e.message));
+    } catch (error) {
+      emit(AuthFailure(error.toString()));
+    }
+  }
+
+  Future<void> _onGoogleLogin(
+      AuthGoogleLoginRequested event, Emitter<AuthState> emit) async {
+    emit(const AuthLoading());
+    try {
+      final result = await _repository.googleLogin();
       emit(AuthSuccess(result['user']));
     } on ApiFailure catch (e) {
       emit(AuthFailure(e.message));

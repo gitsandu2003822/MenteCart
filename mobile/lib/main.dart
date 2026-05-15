@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'bloc/auth_bloc.dart';
@@ -15,6 +16,7 @@ import 'screens/service_detail_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   await ApiService.init();
   runApp(const MyApp());
 }
@@ -38,11 +40,35 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _showSplash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check for existing token on app startup
+    context.read<AuthBloc>().add(const AuthCheckRequested());
+
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() => _showSplash = false);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_showSplash) {
+      return const StartupLoadingScreen();
+    }
+
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is AuthSuccess) {
@@ -59,6 +85,355 @@ class AuthWrapper extends StatelessWidget {
   }
 }
 
+class StartupLoadingScreen extends StatelessWidget {
+  const StartupLoadingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFFDFEFF), Color(0xFFEAF2FF), Color(0xFFF4F8FF)],
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              const _SplashGlow(
+                alignment: Alignment.topCenter,
+                color: Color(0x331D6BFF),
+                size: 280,
+              ),
+              const _SplashGlow(
+                alignment: Alignment.centerLeft,
+                color: Color(0x1A67B8FF),
+                size: 180,
+              ),
+              const _SplashGlow(
+                alignment: Alignment.bottomRight,
+                color: Color(0x22FF8EC7),
+                size: 180,
+              ),
+              Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Expanded(
+                    flex: 5,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: 240,
+                                height: 240,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      const Color(0xFFBFD4FF).withOpacity(0.95),
+                                      const Color(0xFF9DBAFD).withOpacity(0.78),
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF7BA7FF)
+                                          .withOpacity(0.18),
+                                      blurRadius: 40,
+                                      spreadRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: 136,
+                                height: 136,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.18),
+                                  borderRadius: BorderRadius.circular(34),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.38),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.shopping_cart_checkout,
+                                  size: 82,
+                                  color: Color(0xFF1D6BFF),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          RichText(
+                            textAlign: TextAlign.center,
+                            text: const TextSpan(
+                              style: TextStyle(
+                                fontSize: 30,
+                                fontWeight: FontWeight.w800,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: 'Build ',
+                                  style: TextStyle(color: Color(0xFF12204A)),
+                                ),
+                                TextSpan(
+                                  text: 'MenteCart',
+                                  style: TextStyle(color: Color(0xFF1D6BFF)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Book trusted services,\nat your convenience.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              height: 1.38,
+                              color: Color(0xFF667085),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 4,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: const [
+                              _FeatureTile(
+                                icon: Icons.home_repair_service_outlined,
+                                color: Color(0xFF4F8BFF),
+                                label: 'Home',
+                              ),
+                              _FeatureTile(
+                                icon: Icons.water_drop_outlined,
+                                color: Color(0xFF57C4FF),
+                                label: 'Plumbing',
+                              ),
+                              _FeatureTile(
+                                icon: Icons.person_pin_circle_outlined,
+                                color: Color(0xFF9B6CFF),
+                                label: 'Expert',
+                              ),
+                              _FeatureTile(
+                                icon: Icons.support_agent_outlined,
+                                color: Color(0xFFFF86B4),
+                                label: 'Care',
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const _CityscapeBand(),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFF1D6BFF),
+                              width: 3,
+                            ),
+                          ),
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.8,
+                              color: Color(0xFF1D6BFF),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Loading amazing services for you...',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF344054),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SplashGlow extends StatelessWidget {
+  const _SplashGlow({
+    required this.alignment,
+    required this.color,
+    required this.size,
+  });
+
+  final Alignment alignment;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: alignment,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FeatureTile extends StatelessWidget {
+  const _FeatureTile({
+    required this.icon,
+    required this.color,
+    required this.label,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: 68,
+          height: 68,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.42),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.7)),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.18),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: color, size: 30),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF667085),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CityscapeBand extends StatelessWidget {
+  const _CityscapeBand();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 108,
+      width: double.infinity,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              height: 76,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x00FFFFFF), Color(0x99D8E8FF)],
+                ),
+              ),
+            ),
+          ),
+          Opacity(
+            opacity: 0.2,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: const [
+                _SkylineBuilding(height: 24, width: 16),
+                _SkylineBuilding(height: 42, width: 20),
+                _SkylineBuilding(height: 56, width: 24),
+                _SkylineBuilding(height: 34, width: 18),
+                _SkylineBuilding(height: 62, width: 26),
+                _SkylineBuilding(height: 40, width: 18),
+                _SkylineBuilding(height: 50, width: 22),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 0,
+            child: Container(
+              height: 44,
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(44)),
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkylineBuilding extends StatelessWidget {
+  const _SkylineBuilding({required this.height, required this.width});
+
+  final double height;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFF9DBAFD),
+        borderRadius: BorderRadius.circular(6),
+      ),
+    );
+  }
+}
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -67,9 +442,9 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isSignup = false;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -78,27 +453,35 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _submit() {
+  void _submitLogin() {
     final email = _emailController.text.trim();
-    final password = _passwordController.text;
-
+    final password = _passwordController.text.trim();
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please fill all fields")));
+        const SnackBar(content: Text('Please enter email and password')),
+      );
       return;
     }
 
-    if (_isSignup) {
-      context.read<AuthBloc>().add(AuthSignupRequested(email, password));
-    } else {
-      context.read<AuthBloc>().add(AuthLoginRequested(email, password));
+    context.read<AuthBloc>().add(AuthLoginRequested(email, password));
+  }
+
+  void _submitSignup() {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter email and password')),
+      );
+      return;
     }
+    context.read<AuthBloc>().add(AuthSignupRequested(email, password));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("MenteCart")),
+      appBar: AppBar(title: const Text('MenteCart')),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthFailure) {
@@ -106,51 +489,144 @@ class _LoginScreenState extends State<LoginScreen> {
                 .showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: "Email",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: "Password",
-                  border: OutlineInputBorder(),
-                ),
-              ),
               const SizedBox(height: 24),
               SizedBox(
-                width: double.infinity,
-                child: BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, state) {
-                    if (state is AuthLoading) {
-                      return const ElevatedButton(
-                        onPressed: null,
-                        child: CircularProgressIndicator(),
-                      );
-                    }
-                    return ElevatedButton(
-                      onPressed: _submit,
-                      child: Text(_isSignup ? "Sign Up" : "Login"),
-                    );
-                  },
+                height: 200,
+                child: Column(
+                  children: const [
+                    Icon(Icons.shopping_bag_outlined,
+                        size: 72, color: Colors.blue),
+                    SizedBox(height: 12),
+                    Text('Build MenteCart',
+                        style: TextStyle(
+                            fontSize: 22, fontWeight: FontWeight.bold)),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
-              TextButton(
-                onPressed: () => setState(() => _isSignup = !_isSignup),
-                child: Text(_isSignup
-                    ? "Already have account? Login"
-                    : "Don't have account? Sign Up"),
+              const Text(
+                'Welcome Back!',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Login to continue your service journey',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+
+              // Email
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  hintText: 'Email address',
+                  prefixIcon: Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Password
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
+                  hintText: 'Password',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscurePassword
+                        ? Icons.visibility
+                        : Icons.visibility_off),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content:
+                              Text('Forgot password flow not implemented')),
+                    );
+                  },
+                  child: const Text('Forgot Password?'),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              BlocBuilder<AuthBloc, AuthState>(builder: (context, state) {
+                final isLoading = state is AuthLoading;
+                return ElevatedButton(
+                  onPressed: isLoading ? null : _submitLogin,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Login'),
+                );
+              }),
+
+              const SizedBox(height: 16),
+              Row(children: const [
+                Expanded(child: Divider()),
+                SizedBox(width: 8),
+                Text('or continue with'),
+                SizedBox(width: 8),
+                Expanded(child: Divider())
+              ]),
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => context
+                          .read<AuthBloc>()
+                          .add(const AuthGoogleLoginRequested()),
+                      icon: Image.network(
+                        'https://developers.google.com/identity/images/g-logo.png',
+                        width: 24,
+                        height: 24,
+                        errorBuilder: (context, error, stack) =>
+                            const Icon(Icons.g_mobiledata, color: Colors.red),
+                      ),
+                      label: const Text('Google'),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Don't have an account? "),
+                  TextButton(
+                      onPressed: _submitSignup, child: const Text('Sign Up')),
+                ],
               ),
             ],
           ),
